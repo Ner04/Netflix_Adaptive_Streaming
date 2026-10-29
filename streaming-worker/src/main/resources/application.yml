@@ -1,0 +1,19 @@
+spring:
+  main:
+    web-application-type: none   # the worker polls Temporal; it serves no HTTP
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/adaptive_streaming}
+    username: ${DATABASE_USER:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: none     # the API owns the schema
+
+media:
+  root: ${MEDIA_ROOT:/data/media}
+
+temporal:
+  address: ${TEMPORAL_ADDRESS:localhost:7233}
+
+ffmpeg:
+  path: ${FFMPEG_PATH:ffmpeg}

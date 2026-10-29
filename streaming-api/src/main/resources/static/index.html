@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mini-Netflix player</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0d0d12; color: #ececf1; max-width: 860px; margin: 40px auto; padding: 0 16px; }
+    h1 { margin-bottom: 4px; } p { color: #9a9aab; }
+    .card { background: #16161e; border: 1px solid #2c2c38; border-radius: 12px; padding: 20px; margin-top: 20px; }
+    video { width: 100%; border-radius: 8px; background: #000; margin-top: 12px; }
+    #level { font-weight: 700; color: #ffb74a; }
+    button { background: #e50914; color: #fff; border: 0; border-radius: 6px; padding: 8px 14px; font-weight: 700; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>🍕 Mini-Netflix</h1>
+  <p>Upload a video, wait for the kitchen to bake 4 sizes, then watch adaptive streaming live.</p>
+
+  <div class="card">
+    <input type="file" id="file" accept="video/*">
+    <button id="go">Upload</button>
+    <p id="status"></p>
+  </div>
+
+  <div class="card">
+    <div>Now playing quality: <span id="level">–</span></div>
+    <video id="video" controls></video>
+    <p>Tip: open DevTools → Network → throttle to "Slow 4G" and watch the quality drop.</p>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    $('go').onclick = async () => {
+      const f = $('file').files[0];
+      if (!f) return;
+      const body = new FormData();
+      body.append('video', f);
+      $('status').textContent = 'Uploading…';
+      const res = await (await fetch('/api/v1/videos/upload', { method: 'POST', body })).json();
+      if (!res.success) { $('status').textContent = res.message; return; }
+      poll(res.data.videoId);
+    };
+
+    async function poll(id) {
+      const v = (await (await fetch('/api/v1/videos/' + id)).json()).data;
+      $('status').textContent = 'Status: ' + v.processingStatus;
+      if (v.processingStatus === 'completed') return play(v.streamUrl);
+      if (v.processingStatus !== 'failed') setTimeout(() => poll(id), 3000);
+    }
+
+    function play(url) {
+      const video = $('video');
+      if (window.Hls && Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.LEVEL_SWITCHED, (_e, d) => {
+          const l = hls.levels[d.level];
+          $('level').textContent = l.height + 'p (' + Math.round(l.bitrate / 1000) + ' kbps)';
+        });
+      } else {
+        video.src = url; // Safari plays HLS natively
+      }
+      video.play();
+    }
+  </script>
+</body>
+</html>

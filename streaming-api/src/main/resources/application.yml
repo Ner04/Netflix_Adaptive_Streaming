@@ -1,0 +1,24 @@
+server:
+  port: 3000            # Temporal UI already owns 8080
+
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/adaptive_streaming}
+    username: ${DATABASE_USER:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: update   # fine for a demo; use Flyway/Liquibase in production
+  servlet:
+    multipart:
+      max-file-size: 1GB
+      max-request-size: 1GB
+
+media:
+  root: ${MEDIA_ROOT:/data/media}
+
+temporal:
+  address: ${TEMPORAL_ADDRESS:localhost:7233}
+
+cors:
+  origin: ${CORS_ORIGIN:*}
